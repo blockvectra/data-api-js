@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# tsc output
+dist/
+
+# generated from the Data API OpenAPI document by `generate:schema` (openapi-typescript)
+src/schema.ts
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
