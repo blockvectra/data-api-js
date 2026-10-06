@@ -2,8 +2,8 @@
 
 TypeScript client for the [BlockVectra Data API](https://docs.blockvectra.com/en/?ref=gh-data-api-js).
 
-- **Documentation**: [https://docs.blockvectra.com/en/?ref=gh-data-api-js](https://docs.blockvectra.com/en/?ref=gh-data-api-js)
-- **Get an API Key**: [https://blockvectra.com/en/get-api-key/?ref=gh-data-api-js](https://blockvectra.com/en/get-api-key/?ref=gh-data-api-js)
+- **Documentation**: [https://docs.blockvectra.com/en/](https://docs.blockvectra.com/en/?ref=gh-data-api-js)
+- **Get an API Key**: [https://blockvectra.com/en/get-api-key/](https://blockvectra.com/en/get-api-key/?ref=gh-data-api-js)
 - **Status**: Version 0.x. Interfaces may evolve as new endpoints and features are added.
 
 One client works for every supported chain via the `{chain}` path parameter, giving read-only REST/JSON access to indexed chain data (blocks, transactions, addresses, tokens, NFTs, DEX activity, tokenized stocks, dataset freshness).
@@ -70,7 +70,7 @@ if (data) {
 
 ## Create a Client
 
-Get an API key from [https://blockvectra.com/en/get-api-key/?ref=gh-data-api-js](https://blockvectra.com/en/get-api-key/?ref=gh-data-api-js) (or the console at [https://console.blockvectra.com/keys/?ref=gh-data-api-js](https://console.blockvectra.com/keys/?ref=gh-data-api-js)).
+Get an API key from [https://blockvectra.com/en/get-api-key/](https://blockvectra.com/en/get-api-key/?ref=gh-data-api-js) (or the console at [https://console.blockvectra.com/keys/](https://console.blockvectra.com/keys/?ref=gh-data-api-js)).
 
 ```ts
 import { createDataClient } from "@blockvectra/data-api";
