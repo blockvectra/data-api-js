@@ -1,9 +1,9 @@
 # @blockvectra/data-api
 
-TypeScript client for the [BlockVectra Data API](https://docs.blockvectra.com/en/).
+TypeScript client for the [BlockVectra Data API](https://docs.blockvectra.com/en/?ref=gh-data-api-js).
 
-- **Documentation**: [https://docs.blockvectra.com/en/](https://docs.blockvectra.com/en/)
-- **Get an API Key**: [https://blockvectra.com/en/get-api-key/](https://blockvectra.com/en/get-api-key/)
+- **Documentation**: [https://docs.blockvectra.com/en/?ref=gh-data-api-js](https://docs.blockvectra.com/en/?ref=gh-data-api-js)
+- **Get an API Key**: [https://blockvectra.com/en/get-api-key/?ref=gh-data-api-js](https://blockvectra.com/en/get-api-key/?ref=gh-data-api-js)
 - **Status**: Version 0.x. Interfaces may evolve as new endpoints and features are added.
 
 One client works for every supported chain via the `{chain}` path parameter, giving read-only REST/JSON access to indexed chain data (blocks, transactions, addresses, tokens, NFTs, DEX activity, tokenized stocks, dataset freshness).
@@ -70,7 +70,7 @@ if (data) {
 
 ## Create a Client
 
-Get an API key from [https://blockvectra.com/en/get-api-key/](https://blockvectra.com/en/get-api-key/) (or the console at [https://console.blockvectra.com/en/keys/](https://console.blockvectra.com/en/keys/)).
+Get an API key from [https://blockvectra.com/en/get-api-key/?ref=gh-data-api-js](https://blockvectra.com/en/get-api-key/?ref=gh-data-api-js) (or the console at [https://console.blockvectra.com/keys/?ref=gh-data-api-js](https://console.blockvectra.com/keys/?ref=gh-data-api-js)).
 
 ```ts
 import { createDataClient } from "@blockvectra/data-api";
@@ -87,7 +87,7 @@ The key is sent in the `x-api-key` header on every request. Options:
 | `baseUrl` | `https://api.blockvectra.com/v1/data` | Exported as `DEFAULT_BASE_URL`; override it to target another endpoint. |
 | `fetch` | `globalThis.fetch` | Custom `fetch` function (for proxies, custom headers, mocks, or instrumentation). |
 
-Every endpoint except `GET /chains` requires `{chain}`. Use any slug from [Supported Chains](https://docs.blockvectra.com/en/chains/) (`robinhood_mainnet`, `hyperevm_testnet`, etc.). `GET /chains` returns all publicly listed chains.
+Every endpoint except `GET /chains` requires `{chain}`. Use any slug from [Supported Chains](https://docs.blockvectra.com/en/chains/?ref=gh-data-api-js) (`robinhood_mainnet`, `hyperevm_testnet`, etc.). `GET /chains` returns all publicly listed chains.
 
 ## Examples
 
@@ -198,7 +198,7 @@ if (!response.ok) {
 | `429` | `cost_exceeds_burst` | A single request costs more than your burst capacity | Make the request smaller (retrying as-is never succeeds) |
 | `503` | `unavailable` (also `billing_unavailable`) | Temporarily unavailable | Retry later; honour `Retry-After` when present |
 
-Other statuses use the same body: `400 bad_request` (invalid parameter or cursor), `402 insufficient_balance` (top up in the console), `409 window_too_large`, `422 no_coverage`. The [API reference](https://docs.blockvectra.com/en/api/data/) lists the exact codes for each endpoint. Requests are metered in Compute Units (CU), and only 2xx responses are billed.
+Other statuses use the same body: `400 bad_request` (invalid parameter or cursor), `402 insufficient_balance` (top up in the console), `409 window_too_large`, `422 no_coverage`. The [API reference](https://docs.blockvectra.com/en/api/data/?ref=gh-data-api-js) lists the exact codes for each endpoint. Requests are metered in Compute Units (CU), and only 2xx responses are billed.
 
 ## Types
 
