@@ -14,15 +14,15 @@ One client works for every supported chain via the `{chain}` path parameter, giv
 
 ## Installation
 
-This package is not yet published to npm. A prebuilt package is available from the [v0.1.1 GitHub release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.1); you can also install it directly from source via GitHub or build it locally.
+This package is not yet published to npm. A prebuilt package is available from the [v0.1.2 GitHub release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.2); you can also install it directly from source via GitHub or build it locally.
 
 ### Install the prebuilt package
 
 ```bash
-npm install https://github.com/blockvectra/data-api-js/releases/download/v0.1.1/blockvectra-data-api-0.1.1.tgz
+npm install https://github.com/blockvectra/data-api-js/releases/download/v0.1.2/blockvectra-data-api-0.1.2.tgz
 ```
 
-The tarball includes compiled code and TypeScript declarations, so installation does not generate the schema or compile from source. The [release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.1) also provides a `SHA256SUMS` file for verification.
+The tarball includes compiled code and TypeScript declarations, so installation does not generate the schema or compile from source. The [release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.2) also provides a `SHA256SUMS` file for verification.
 
 ### Install from GitHub
 
@@ -188,7 +188,7 @@ do {
 
 ## Error Handling
 
-The client does not throw on HTTP errors — check `response.ok` / `response.status`. (A network failure still rejects, as `fetch` does.) Only errors produced by the API itself have a JSON error body, `{ "error": { "code": "...", "message": "...", "indexed_through"?: number } }` (exported as the `DataApiError` type): branch on `code`, and treat `message` as text for logs. `indexed_through` is present only on `409 not_indexed_yet` (the highest indexed block). For anything else — a CDN or server 5xx HTML page, for example — `error` is the raw string, so rely on `response.status` instead. One API error has no body at all: a missing, unknown, or disabled API key gets `404` with an **empty body**, so `error` is `undefined` there. In contrast, an unknown or not-public chain returns HTTP `404` with `error.code` `not_found` (decided before the key check, not billed).
+The client does not throw on HTTP errors — check `response.ok` / `response.status`. (A network failure still rejects, as `fetch` does.) Errors returned by the API use the JSON envelope `{ "error": { "code": "...", "message": "...", "indexed_through"?: number } }` (exported as the `DataApiError` type): branch on `code`, and treat `message` as text for logs. `indexed_through` is present only on `409 not_indexed_yet` (the highest indexed block). Responses that are not API JSON — a CDN or server 5xx HTML page, for example — have no `error.code`. Non-JSON error bodies may be returned as raw text; an empty response may have no `error` value. Use `response.status` for both. Authentication uses only the `x-api-key` header: a missing key returns HTTP `401` with `error.code` `missing_api_key`, while an unknown, disabled, or revoked key returns HTTP `401` with `error.code` `invalid_api_key`. An unknown or not-public chain returns HTTP `404` with `error.code` `not_found` before the API key lookup and is not billed; do not treat an empty `404` body as an authentication error. See authentication errors for [`missing_api_key`](https://docs.blockvectra.com/en/errors/#missing_api_key) and [`invalid_api_key`](https://docs.blockvectra.com/en/errors/#invalid_api_key).
 
 ```ts
 const { data, error, response } = await client.GET("/{chain}/blocks/{number}", {
@@ -196,10 +196,15 @@ const { data, error, response } = await client.GET("/{chain}/blocks/{number}", {
 });
 
 if (!response.ok) {
-  const code = error?.error?.code; // undefined when the body is empty or not JSON
+  const code = error?.error?.code; // present when the API returns a JSON error body
   const retryAfter = response.headers.get("Retry-After"); // seconds, when present
 
-  if (response.status === 404 && !code) throw new Error("API key missing, unknown or disabled");
+  if (response.status === 401) {
+    const reason = code === "missing_api_key" ? "API key missing"
+      : code === "invalid_api_key" ? "API key invalid (unknown, disabled, or revoked)"
+      : "authentication failed";
+    throw new Error(`Data API: ${reason}`);
+  }
   if (response.status === 429 || response.status === 503) {
     // back off for `retryAfter` seconds (or your own delay) and retry
   }
@@ -209,7 +214,8 @@ if (!response.ok) {
 
 | Status | `error.code` | Meaning | What to do |
 | --- | --- | --- | --- |
-| `404` | — (empty body) | Missing, unknown, or disabled API key (the reason is not distinguished) | Pass an active, valid key |
+| `401` | `missing_api_key` | No API key was sent in `x-api-key` | Send an API key in `x-api-key` |
+| `401` | `invalid_api_key` | The API key is unknown, disabled, or revoked | Use an active, valid key |
 | `404` | `not_found` | The object doesn't exist (or isn't indexed yet), or `{chain}` is an unknown or not-public chain (HTTP `404` with `error.code` `not_found`, not billed) | Check the request |
 | `409` | `not_indexed_yet` | Block number or window is above the newest fully written block (`as_of_block`), or hash resolves above it; `indexed_through` is the highest indexed block | Poll/retry later until your block is at or below `indexed_through` |
 | `429` | `rate_limited` | Requests sent too quickly | Retry later; honour `Retry-After` when present |
