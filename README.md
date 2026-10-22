@@ -14,7 +14,15 @@ One client works for every supported chain via the `{chain}` path parameter, giv
 
 ## Installation
 
-This package is not yet published to npm. You can install it directly from source via GitHub or build it locally.
+This package is not yet published to npm. A prebuilt package is available from the [v0.1.0 GitHub release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.0); you can also install it directly from source via GitHub or build it locally.
+
+### Install the prebuilt package
+
+```bash
+npm install https://github.com/blockvectra/data-api-js/releases/download/v0.1.0/blockvectra-data-api-0.1.0.tgz
+```
+
+The tarball includes compiled code and TypeScript declarations, so installation does not generate the schema or compile from source. The [release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.0) also provides a `SHA256SUMS` file for verification.
 
 ### Install from GitHub
 
