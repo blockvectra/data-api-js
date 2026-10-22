@@ -30,6 +30,16 @@ pnpm add github:blockvectra/data-api-js
 yarn add github:blockvectra/data-api-js
 ```
 
+The Git install runs the package's `prepare` script, which generates the TypeScript types from the Data API's public OpenAPI document and then builds `dist/`. The install therefore needs network access to `https://docs.blockvectra.com/openapi/data.yaml`.
+
+If you have the OpenAPI document saved locally — useful for an offline build or to build against a frozen schema — point `BLOCKVECTRA_OPENAPI_FILE` at its absolute path:
+
+```bash
+BLOCKVECTRA_OPENAPI_FILE=/path/to/data.yaml npm install github:blockvectra/data-api-js
+```
+
+This only changes where the schema is read from; npm still downloads dependencies according to your npm configuration.
+
 ### Install from Local Source
 
 ```bash

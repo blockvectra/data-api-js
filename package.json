@@ -35,6 +35,7 @@
   },
   "scripts": {
     "generate:schema": "tsx scripts/generate-schema.ts",
+    "prepare": "npm run build",
     "prebuild": "npm run generate:schema",
     "build": "tsc -p tsconfig.build.json",
     "pretypecheck": "npm run generate:schema",
