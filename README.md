@@ -134,7 +134,7 @@ if (!apiKey) {
 const client = createDataClient({ apiKey });
 ```
 
-Every endpoint except `GET /chains` requires `{chain}`. Use any slug from [Supported Chains](https://docs.blockvectra.com/en/chains/?ref=gh-data-api-js) (`robinhood_mainnet`, `hyperevm_testnet`, etc.). `GET /chains` returns all publicly listed chains.
+Every endpoint except `GET /chains` requires `{chain}`. Use a `chain` value returned by the Data API's `GET /chains` (for example, `robinhood_mainnet`) and check that entry's `features` and `coverage` for the dataset you need. See the [Data API chain reference](https://docs.blockvectra.com/en/api/data/?ref=gh-data-api-js#chains).
 
 ## Examples
 
