@@ -14,15 +14,15 @@ One client works for every supported chain via the `{chain}` path parameter, giv
 
 ## Installation
 
-This package is not yet published to npm. A prebuilt package is available from the [v0.1.2 GitHub release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.2); you can also install it directly from source via GitHub or build it locally.
+This package is not yet published to npm. A prebuilt package is available from the [v0.1.3 GitHub release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.3); you can also install it directly from source via GitHub or build it locally.
 
 ### Install the prebuilt package
 
 ```bash
-npm install https://github.com/blockvectra/data-api-js/releases/download/v0.1.2/blockvectra-data-api-0.1.2.tgz
+npm install https://github.com/blockvectra/data-api-js/releases/download/v0.1.3/blockvectra-data-api-0.1.3.tgz
 ```
 
-The tarball includes compiled code and TypeScript declarations, so installation does not generate the schema or compile from source. The [release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.2) also provides a `SHA256SUMS` file for verification.
+The tarball includes compiled code and TypeScript declarations, so installation does not generate the schema or compile from source. The [release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.3) also provides a `SHA256SUMS` file for verification.
 
 ### Install from GitHub
 
@@ -101,9 +101,21 @@ The key is sent in the `x-api-key` header on every request. Options:
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `apiKey` | *(required)* | Your BlockVectra API key. Sent in `x-api-key`. |
+| `apiKey` | *(required)* | Your BlockVectra API key. Sent in `x-api-key`. Must be a non-empty string; otherwise `createDataClient` throws a `TypeError` locally and sends no request. |
 | `baseUrl` | `https://api.blockvectra.com/v1/data` | Exported as `DEFAULT_BASE_URL`; override it to target another endpoint. |
 | `fetch` | `globalThis.fetch` | Custom `fetch` function (for proxies, custom headers, mocks, or instrumentation). |
+
+If `process.env.BLOCKVECTRA_API_KEY` is unset, empty or only whitespace, `createDataClient` throws a `TypeError` before any request is made. The SDK does not check the key's format or whether it is active; a non-empty key is sent unchanged and the server decides. To read the variable explicitly without printing it:
+
+```ts
+import { createDataClient } from "@blockvectra/data-api";
+
+const apiKey = process.env.BLOCKVECTRA_API_KEY;
+if (!apiKey) {
+  throw new Error("Set BLOCKVECTRA_API_KEY to your BlockVectra API key.");
+}
+const client = createDataClient({ apiKey });
+```
 
 Every endpoint except `GET /chains` requires `{chain}`. Use any slug from [Supported Chains](https://docs.blockvectra.com/en/chains/?ref=gh-data-api-js) (`robinhood_mainnet`, `hyperevm_testnet`, etc.). `GET /chains` returns all publicly listed chains.
 
@@ -143,6 +155,8 @@ if (data) {
 ### A Transaction, with Its Event Logs
 
 ```ts
+import { isDataApiError } from "@blockvectra/data-api";
+
 const { data, error, response } = await client.GET("/{chain}/transactions/{hash}", {
   params: {
     path: { chain, hash: "0xc6045ba4d19b790f2d8ac100ecb3ac6c4da87364732fbd079a19dfbfc3485669" },
@@ -154,7 +168,7 @@ if (data) {
   const tx = data.data;
   console.log(tx.block_number, tx.from, tx.to, tx.value, tx.status, tx.logs?.length);
 } else {
-  console.error(response.status, error?.error?.code);
+  console.error(response.status, isDataApiError(error) ? error.error.code : undefined);
 }
 ```
 
@@ -165,6 +179,8 @@ if (data) {
 Address listings need a block window (`from_block`/`to_block`, at most 100,000 blocks) and are cursor-paginated. Pass `next_cursor` back unchanged until it is absent:
 
 ```ts
+import { isDataApiError } from "@blockvectra/data-api";
+
 const address = "0xc2038401dc39805d25427591b43714cdf1e02c64";
 let cursor: string | undefined;
 
@@ -175,7 +191,7 @@ do {
       query: { standard: "erc20", from_block: head - 99_999, to_block: head, limit: 100, cursor },
     },
   });
-  if (!data) throw new Error(`transfers: HTTP ${response.status} ${error?.error?.code ?? ""}`);
+  if (!data) throw new Error(`transfers: HTTP ${response.status} ${isDataApiError(error) ? error.error.code : ""}`);
 
   for (const t of data.data) {
     if (t.standard === "erc20") console.log(t.block_number, t.token, t.from, t.to, t.amount);
@@ -188,15 +204,18 @@ do {
 
 ## Error Handling
 
-The client does not throw on HTTP errors — check `response.ok` / `response.status`. (A network failure still rejects, as `fetch` does.) Errors returned by the API use the JSON envelope `{ "error": { "code": "...", "message": "...", "indexed_through"?: number } }` (exported as the `DataApiError` type): branch on `code`, and treat `message` as text for logs. `indexed_through` is present only on `409 not_indexed_yet` (the highest indexed block). Responses that are not API JSON — a CDN or server 5xx HTML page, for example — have no `error.code`. Non-JSON error bodies may be returned as raw text; an empty response may have no `error` value. Use `response.status` for both. Authentication uses only the `x-api-key` header: a missing key returns HTTP `401` with `error.code` `missing_api_key`, while an unknown, disabled, or revoked key returns HTTP `401` with `error.code` `invalid_api_key`. An unknown or not-public chain returns HTTP `404` with `error.code` `not_found` before the API key lookup and is not billed; do not treat an empty `404` body as an authentication error. See authentication errors for [`missing_api_key`](https://docs.blockvectra.com/en/errors/#missing_api_key) and [`invalid_api_key`](https://docs.blockvectra.com/en/errors/#invalid_api_key).
+The client does not throw on HTTP errors — check `response.ok` / `response.status`. (A network failure still rejects, as `fetch` does.) Errors returned by the API use the JSON envelope `{ "error": { "code": "...", "message": "...", "indexed_through"?: number } }` (exported as the `DataApiError` type, the shape of a *verified* JSON body): an HTTP error payload is not always JSON, so narrow it with the exported `isDataApiError(error)` guard before reading `error.error.code`. It only checks the structure; it does not validate your key. Branch on `code`, and treat `message` as text for logs. `indexed_through` is present only on `409 not_indexed_yet` (the highest indexed block). Responses that are not API JSON — a CDN or server 5xx HTML page, for example — have no `error.code`. Non-JSON error bodies may be returned as raw text; an empty response may have no `error` value. Use `response.status` for both. Authentication uses only the `x-api-key` header: a missing key returns HTTP `401` with `error.code` `missing_api_key`, while an unknown, disabled, or revoked key returns HTTP `401` with `error.code` `invalid_api_key`. An unknown or not-public chain returns HTTP `404` with `error.code` `not_found` before the API key lookup and is not billed; do not treat an empty `404` body as an authentication error. See authentication errors for [`missing_api_key`](https://docs.blockvectra.com/en/errors/#missing_api_key) and [`invalid_api_key`](https://docs.blockvectra.com/en/errors/#invalid_api_key).
 
 ```ts
+import { isDataApiError } from "@blockvectra/data-api";
+
 const { data, error, response } = await client.GET("/{chain}/blocks/{number}", {
   params: { path: { chain, number: 72838701 } },
 });
 
 if (!response.ok) {
-  const code = error?.error?.code; // present when the API returns a JSON error body
+  const apiError = isDataApiError(error) ? error.error : undefined; // only when the API returned a JSON error body
+  const code = apiError?.code;
   const retryAfter = response.headers.get("Retry-After"); // seconds, when present
 
   if (response.status === 401) {
@@ -208,7 +227,7 @@ if (!response.ok) {
   if (response.status === 429 || response.status === 503) {
     // back off for `retryAfter` seconds (or your own delay) and retry
   }
-  throw new Error(`Data API ${response.status} ${code}: ${error?.error?.message}`);
+  throw new Error(`Data API ${response.status} ${code}: ${apiError?.message}`);
 }
 ```
 

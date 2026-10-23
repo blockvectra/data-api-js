@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 
-import { createDataClient, DEFAULT_BASE_URL, type DataApiError, type paths } from "./index.js";
+import { createDataClient, DEFAULT_BASE_URL, isDataApiError, type DataApiError, type paths } from "./index.js";
 
 const API_KEY = "rgw_test_key";
 const CHAIN = "robinhood_mainnet";
@@ -71,10 +71,13 @@ describe("createDataClient", () => {
       params: { path: { chain: CHAIN, number: 5 } },
     });
 
-    expectTypeOf(error).toEqualTypeOf<DataApiError | undefined>();
     expect(data).toBeUndefined();
     expect(response.status).toBe(404);
-    expect(error?.error.code).toBe("not_found");
+    expect(isDataApiError(error)).toBe(true);
+    if (isDataApiError(error)) {
+      expectTypeOf(error).toEqualTypeOf<DataApiError>();
+      expect(error.error.code).toBe("not_found");
+    }
   });
 
   it("returns no `error` for the empty-body 404 of a missing/unknown key — branch on response.status", async () => {
@@ -91,6 +94,52 @@ describe("createDataClient", () => {
     expect(response.status).toBe(404);
   });
 
+  it.each([
+    ["undefined", undefined],
+    ["null", null],
+    ["empty string", ""],
+    ["spaces", "   "],
+    ["tabs and newlines", " \t\r\n "],
+    ["number", 12345],
+    ["object", { key: "rgw_object_secret" }],
+  ])("rejects an invalid apiKey (%s) synchronously and never calls fetch", (_label, apiKey) => {
+    const { fetch } = mockFetch(() => json(200, { data: [], meta: META }));
+
+    let thrown: unknown;
+    try {
+      createDataClient({ apiKey: apiKey as unknown as string, fetch });
+    } catch (e) {
+      thrown = e;
+    }
+
+    expect(thrown).toBeInstanceOf(TypeError);
+    expect((thrown as TypeError).message).toMatch(/apiKey/);
+    expect((thrown as TypeError).message).not.toContain("rgw_object_secret");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects a missing apiKey property without calling fetch", () => {
+    const { fetch } = mockFetch(() => json(200, { data: [], meta: META }));
+    expect(() => createDataClient({ fetch } as unknown as Parameters<typeof createDataClient>[0])).toThrow(TypeError);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("sends a non-empty key of any shape unchanged and leaves a server rejection to the server error handling", async () => {
+    const body: DataApiError = { error: { code: "unauthorized", message: "invalid api key" } };
+    const { fetch, calls } = mockFetch(() => json(401, body));
+    const client = createDataClient({ apiKey: "not-an-rgw-key", fetch });
+
+    const { error, response } = await client.GET("/{chain}/status/freshness", {
+      params: { path: { chain: CHAIN } },
+    });
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(calls[0].headers.get("x-api-key")).toBe("not-an-rgw-key");
+    expect(response.status).toBe(401);
+    expect(isDataApiError(error)).toBe(true);
+    expect(error).toEqual(body);
+  });
+
   it("exposes Retry-After on 429 alongside the error code", async () => {
     const { fetch } = mockFetch(() =>
       json(429, { error: { code: "rate_limited", message: "rate limit exceeded" } }, { "Retry-After": "2" }),
@@ -103,7 +152,8 @@ describe("createDataClient", () => {
 
     expect(response.status).toBe(429);
     expect(response.headers.get("Retry-After")).toBe("2");
-    expect(error?.error.code).toBe("rate_limited");
+    expect(isDataApiError(error)).toBe(true);
+    if (isDataApiError(error)) expect(error.error.code).toBe("rate_limited");
   });
 
   it("types chain-scoped paths with the {chain} segment exactly as the spec defines it", () => {
@@ -114,6 +164,39 @@ describe("createDataClient", () => {
       chain: string;
       number: number;
     }>();
+  });
+});
+
+describe("isDataApiError", () => {
+  it.each([
+    ["minimal", { error: { code: "not_found", message: "x" } }],
+    ["indexed_through number", { error: { code: "not_indexed_yet", message: "x", indexed_through: 0 } }],
+    ["data object", { error: { code: "unavailable", message: "x", data: { reason: null } } }],
+  ])("accepts %s", (_l, v) => {
+    expect(isDataApiError(v)).toBe(true);
+  });
+
+  it.each([
+    ["undefined", undefined],
+    ["null", null],
+    ["empty string", ""],
+    ["HTML string", "<html>502</html>"],
+    ["JSON string", '{"error":{"code":"a","message":"b"}}'],
+    ["array", []],
+    ["no error key", {}],
+    ["error null", { error: null }],
+    ["error array", { error: [] }],
+    ["error string", { error: "boom" }],
+    ["non-string code", { error: { code: 401, message: "x" } }],
+    ["non-string message", { error: { code: "a", message: null } }],
+    ["missing message", { error: { code: "a" } }],
+    ["indexed_through string", { error: { code: "a", message: "b", indexed_through: "5" } }],
+    ["indexed_through null", { error: { code: "a", message: "b", indexed_through: null } }],
+    ["data null", { error: { code: "a", message: "b", data: null } }],
+    ["data array", { error: { code: "a", message: "b", data: [] } }],
+    ["data string", { error: { code: "a", message: "b", data: "x" } }],
+  ])("rejects %s", (_l, v) => {
+    expect(isDataApiError(v)).toBe(false);
   });
 });
 
