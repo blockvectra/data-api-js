@@ -1,8 +1,8 @@
 # @blockvectra/data-api
 
-TypeScript client for the [BlockVectra Data API](https://docs.blockvectra.com/en/?ref=gh-data-api-js).
+TypeScript client for the [BlockVectra Data API](https://docs.blockvectra.com/en/api/data/?ref=gh-data-api-js).
 
-- **Documentation**: [https://docs.blockvectra.com/en/](https://docs.blockvectra.com/en/?ref=gh-data-api-js)
+- **Documentation**: [https://docs.blockvectra.com/en/api/data/](https://docs.blockvectra.com/en/api/data/?ref=gh-data-api-js)
 - **Get an API Key**: [https://blockvectra.com/en/get-api-key/](https://blockvectra.com/en/get-api-key/?ref=gh-data-api-js)
 - **Status**: Version 0.x. Interfaces may evolve as new endpoints and features are added.
 
@@ -71,20 +71,37 @@ npm install @blockvectra/data-api
 
 ## Quick Start
 
-```ts
-import { createDataClient } from "@blockvectra/data-api";
+Save this as `quickstart.mjs` in a project where the package is installed (see [Installation](#installation)). It makes exactly one `GET /{chain}/status/freshness` request with a 15-second timeout and no retries.
 
-const client = createDataClient({ apiKey: process.env.BLOCKVECTRA_API_KEY! });
-const chain = "robinhood_mainnet";
+```js
+import { createDataClient, isDataApiError } from "@blockvectra/data-api";
 
-const { data, error } = await client.GET("/{chain}/status/freshness", {
+const chain = process.env.BLOCKVECTRA_CHAIN || "robinhood_mainnet";
+// A missing or blank key throws a TypeError here, before any request is sent.
+const client = createDataClient({ apiKey: process.env.BLOCKVECTRA_API_KEY });
+
+const { data, error, response } = await client.GET("/{chain}/status/freshness", {
   params: { path: { chain } },
+  signal: AbortSignal.timeout(15_000),
 });
 
-if (data) {
-  console.log("Finalized block:", data.meta.finalized_block);
+if (!response.ok) {
+  const code = isDataApiError(error) && /^[a-z0-9_]{1,64}$/.test(error.error.code) ? ` ${error.error.code}` : "";
+  throw new Error(`Data API request failed: HTTP ${response.status}${code}`);
 }
+if (!data) {
+  throw new Error(`Data API returned HTTP ${response.status} without data`);
+}
+
+console.log("chain:", chain);
+console.log("as_of_block:", data.meta.as_of_block);
+console.log("finalized_block:", data.meta.finalized_block);
+console.log("datasets:", data.data.length);
 ```
+
+Provide the key through your environment or a secret manager (`BLOCKVECTRA_API_KEY`), then run `node quickstart.mjs`. Do not paste the key on the command line or into the file, and do not print it. Set `BLOCKVECTRA_CHAIN` to use another [supported chain](https://docs.blockvectra.com/en/chains/?ref=gh-data-api-js).
+
+Any non-2xx response, or a `200` without data, makes the script exit with an error. For a `401`, check the key and the chain. For `429` and `503`, see [Error Handling](#error-handling) and retry on your own schedule; the example does not retry.
 
 ## Create a Client
 
