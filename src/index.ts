@@ -30,7 +30,32 @@ export type DataClient = Client<paths>;
  */
 export type DataApiError = components["schemas"]["ErrorBody"];
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Narrows an HTTP error payload to {@link DataApiError}. Error payloads are not
+ * guaranteed to be JSON (HTML pages, empty bodies, raw text), so check before
+ * reading `error.code`. Only the shape is checked; nothing is parsed or coerced.
+ */
+export function isDataApiError(value: unknown): value is DataApiError {
+  if (!isPlainObject(value) || !isPlainObject(value.error)) return false;
+  const { code, message, indexed_through, data } = value.error;
+  return (
+    typeof code === "string" &&
+    typeof message === "string" &&
+    (indexed_through === undefined || typeof indexed_through === "number") &&
+    (data === undefined || isPlainObject(data))
+  );
+}
+
 /** Creates a typed Data API client that authenticates every request with `apiKey`. */
 export function createDataClient({ apiKey, baseUrl = DEFAULT_BASE_URL, fetch }: DataClientOptions): DataClient {
+  if (typeof apiKey !== "string" || apiKey.trim() === "") {
+    throw new TypeError(
+      "createDataClient: `apiKey` must be a non-empty string. If you read it from an environment variable such as BLOCKVECTRA_API_KEY, check that the variable is set and not empty.",
+    );
+  }
   return createClient<paths>({ baseUrl, fetch, headers: { "x-api-key": apiKey } });
 }
