@@ -43,7 +43,9 @@
     "typecheck": "tsc --noEmit && tsx scripts/typecheck-readme.ts",
     "typecheck:readme": "tsx scripts/typecheck-readme.ts",
     "pretest": "npm run generate:schema",
-    "test": "vitest run"
+    "test": "vitest run",
+    "verify:publication": "node scripts/verify-publication.mjs",
+    "test:publication": "node --test scripts/verify-publication.test.mjs"
   },
   "dependencies": {
     "openapi-fetch": "^0.17.0"
