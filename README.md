@@ -156,6 +156,39 @@ if (data) {
 }
 ```
 
+### Daily DEX Prices
+
+[`examples/dex-daily-prices.mjs`](examples/dex-daily-prices.mjs) makes exactly one `GET /{chain}/dex/prices` request with a 15-second timeout and no retries, then prints the response envelope (`meta` and `data`) as JSON without converting decimal strings to numbers.
+
+From a clone, build as documented above, then run:
+
+```bash
+node examples/dex-daily-prices.mjs
+```
+
+Or copy the file into a project where `@blockvectra/data-api` is installed. Examples are not included in the prebuilt package; that package contains only `dist`, `README.md`, and `LICENSE`, while examples live in the repository.
+
+Provide the key through your environment or a secret manager. Never put it in the script or pass it on the command line. Required environment variables:
+
+- `BLOCKVECTRA_API_KEY` — API key.
+- `BLOCKVECTRA_CHAIN` — a `chain` value from the Data API's `GET /chains` entry (`entry.chain`).
+- `BLOCKVECTRA_TOKEN` — base token address.
+- `BLOCKVECTRA_QUOTE` — quote token address. This example requires it to select a single pair; the API parameter itself is optional.
+- `BLOCKVECTRA_FROM`, `BLOCKVECTRA_TO` — UTC `YYYY-MM-DD` dates, inclusive.
+
+A missing or blank value exits with status 1 before any request is sent.
+
+- `from`/`to` are UTC calendar dates, inclusive. `to - from` must be at most 90 days; this is not a limit of 90 rows.
+- Rows are daily VWAP and volume, not minute candles, and not values converted to USD.
+- A zero quote address means native ETH.
+- Raw strings are preserved as returned. A `null` decimal means unknown, not 18 decimals.
+- When `meta.refreshed_at` is `null`, treat the snapshot as stale or unknown. A non-null timestamp alone does not guarantee freshness.
+- `as_of_block` is the service's current indexed head, not the snapshot's block watermark.
+- The latest day may be missing or partial for about a day.
+- An empty `data` array is still a successful response, but it is not proof of completeness.
+
+Non-2xx responses exit with only the HTTP status. Network, timeout, and JSON errors exit with a fixed message that does not include the underlying error text.
+
 ### Blocks and Block Details
 
 ```ts
