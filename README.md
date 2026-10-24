@@ -14,15 +14,19 @@ One client works for every supported chain via the `{chain}` path parameter, giv
 
 ## Installation
 
-This package is not yet published to npm. A prebuilt package is available from the [v0.1.3 GitHub release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.3); you can also install it directly from source via GitHub or build it locally.
+```bash
+npm install @blockvectra/data-api
+```
+
+The npm package includes compiled JavaScript, TypeScript declarations and the runnable daily-price example. You can also use a prebuilt GitHub package or install from source.
 
 ### Install the prebuilt package
 
 ```bash
-npm install https://github.com/blockvectra/data-api-js/releases/download/v0.1.3/blockvectra-data-api-0.1.3.tgz
+npm install https://github.com/blockvectra/data-api-js/releases/download/v0.1.4/blockvectra-data-api-0.1.4.tgz
 ```
 
-The tarball includes compiled code and TypeScript declarations, so installation does not generate the schema or compile from source. The [release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.3) also provides a `SHA256SUMS` file for verification.
+The tarball includes compiled code and TypeScript declarations, so installation does not generate the schema or compile from source. The [release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.4) also provides a `SHA256SUMS` file for verification.
 
 ### Install from GitHub
 
@@ -61,12 +65,6 @@ Then in your project:
 
 ```bash
 npm install /path/to/data-api-js
-```
-
-### Once Published to npm
-
-```bash
-npm install @blockvectra/data-api
 ```
 
 ## Quick Start
@@ -166,7 +164,13 @@ From a clone, build as documented above, then run:
 node examples/dex-daily-prices.mjs
 ```
 
-Or copy the file into a project where `@blockvectra/data-api` is installed. Examples are not included in the prebuilt package; that package contains only `dist`, `README.md`, and `LICENSE`, while examples live in the repository.
+The npm and prebuilt packages also include the example. From a project where the npm package is installed, run:
+
+```bash
+node node_modules/@blockvectra/data-api/examples/dex-daily-prices.mjs
+```
+
+You can also copy the example into your project.
 
 Provide the key through your environment or a secret manager. Never put it in the script or pass it on the command line. Required environment variables:
 
