@@ -256,6 +256,35 @@ do {
 
 `head` is `meta.as_of_block` from the freshness endpoint. With `clamp: "true"`, a window that is too wide or whose `to_block` is past `as_of_block` is truncated instead of failing with `409` (unless `from_block` itself is past it), and `meta.coverage` becomes `"partial"`.
 
+### Checkpointed ERC-20 Transfers (one page per run)
+
+[`examples/address-transfers-page.mjs`](examples/address-transfers-page.mjs) is a Node.js 18+ repository example. It is **not** in the currently published npm `0.1.4` package; copy it beside a locally installed SDK or run it from a built checkout. It imports `@blockvectra/data-api` without changing the SDK.
+
+Set `BLOCKVECTRA_API_KEY` in the environment (never in the file, an argument, or output), create an existing private directory, and run once per page:
+
+```bash
+BLOCKVECTRA_CHAIN=robinhood_mainnet \
+BLOCKVECTRA_ADDRESS=0x0000000000000000000000000000000000000000 \
+BLOCKVECTRA_FROM_BLOCK=18000000 \
+BLOCKVECTRA_TO_BLOCK=18099999 \
+BLOCKVECTRA_STATE="$PWD/.checkpoints/address-transfers.json" \
+node examples/address-transfers-page.mjs
+```
+
+The chain must be a lowercase slug, the address a `0x`-prefixed 20-byte value, and the block bounds non-negative decimal strings with `to >= from` and a window of at most 100,000 blocks. The example fixes `standard=erc20`, `direction=any`, `limit=100`, and sends no clamp or base-URL override.
+
+Each invocation makes at most one explicit `GET /{chain}/addresses/{address}/transfers` with a 15-second timeout and no retries. Rerunning with the same query and state path resumes from the last opaque cursor. A complete checkpoint makes zero requests. Completion means only that pagination is exhausted: it does not mean the window is complete or that no transfers are missing.
+
+Every page is saved as its original response envelope, including its original `meta` fields. A `partial` coverage stays recorded as `partial`; it is never silently rewritten as `full`. The block window is fixed by the environment: the example does not fetch a live head, clamp, or move the window.
+
+The example budgets are 20 pages, 100 rows per response, 1 MiB per response, and 2 MiB per checkpoint. These are example limits, not service guarantees. The source also documents an important limitation: during an ascending backfill, a hole can return HTTP 200 with empty `data`; even `meta.coverage=full` plus pagination exhausted is not independent proof of absence or zero missing transfers.
+
+Any non-2xx, network error, timeout, invalid JSON, malformed envelope, size overflow, duplicate cursor, or mismatched checkpoint stops without advancing. A cursor is never reset or restarted automatically. The checkpoint parent must be an existing private directory; a stale lock is not removed automatically, so check that its owner has stopped before removing it manually. Restart from a new state file only after deliberate review.
+
+Replacement is atomic for process interruption, not a power-loss guarantee. It assumes a trusted private directory and makes no SLA, hostile-directory, block-hash, reorg-recovery, snapshot-isolation, integrity-audit, or zero-missing guarantee.
+
+The API key is never printed or persisted, and transfer amounts remain exactly as returned. The summary contains only row/page counts, whether pagination is exhausted, and observed coverages.
+
 ## Error Handling
 
 The client does not throw on HTTP errors — check `response.ok` / `response.status`. (A network failure still rejects, as `fetch` does.) Errors returned by the API use the JSON envelope `{ "error": { "code": "...", "message": "...", "indexed_through"?: number } }` (exported as the `DataApiError` type, the shape of a *verified* JSON body): an HTTP error payload is not always JSON, so narrow it with the exported `isDataApiError(error)` guard before reading `error.error.code`. It only checks the structure; it does not validate your key. Branch on `code`, and treat `message` as text for logs. `indexed_through` is present only on `409 not_indexed_yet` (the highest indexed block). Responses that are not API JSON — a CDN or server 5xx HTML page, for example — have no `error.code`. Non-JSON error bodies may be returned as raw text; an empty response may have no `error` value. Use `response.status` for both. Authentication uses only the `x-api-key` header: a missing key returns HTTP `401` with `error.code` `missing_api_key`, while an unknown, disabled, or revoked key returns HTTP `401` with `error.code` `invalid_api_key`. An unknown or not-public chain returns HTTP `404` with `error.code` `not_found` before the API key lookup and is not billed; do not treat an empty `404` body as an authentication error. See authentication errors for [`missing_api_key`](https://docs.blockvectra.com/en/errors/#missing_api_key) and [`invalid_api_key`](https://docs.blockvectra.com/en/errors/#invalid_api_key).

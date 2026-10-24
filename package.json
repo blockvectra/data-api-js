@@ -43,7 +43,7 @@
     "typecheck": "tsc --noEmit && tsx scripts/typecheck-readme.ts",
     "typecheck:readme": "tsx scripts/typecheck-readme.ts",
     "pretest": "npm run generate:schema",
-    "test": "vitest run",
+    "test": "vitest run src && node --test scripts/verify-publication.test.mjs scripts/address-transfers-page.test.mjs",
     "verify:publication": "node scripts/verify-publication.mjs",
     "test:publication": "node --test scripts/verify-publication.test.mjs"
   },
