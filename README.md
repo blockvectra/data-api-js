@@ -193,6 +193,25 @@ A missing or blank value exits with status 1 before any request is sent.
 
 Non-2xx responses exit with only the HTTP status. Network, timeout, and JSON errors exit with a fixed message that does not include the underlying error text.
 
+#### Historical WETH/USDG response
+
+The [saved response](docs/responses/dex-prices-robinhood-weth-usdg-2026-10-01.json) is a historical response observed on 2026-10-24 UTC through SDK 0.1.5. It is not a current market price and has not been independently verified against an oracle.
+
+The response contains one daily row for 2026-10-01, token `0x0bd7d308f8e1639fab988df18a8011f41eacad73` (WETH), quote `0x5fc5360d0400a0fd4f2af552add042d716f1d168` (USDG), with `vwap` string `"2692.631786963314483992"` in USDG per WETH, not a USD conversion. The row's `refreshed_at` is `2026-10-04T01:02:36Z`; `meta.refreshed_at` is `2026-10-08T00:56:50Z`. The first is attached to the daily row, and the second is response-level metadata; neither proves the row is current. The response's `meta.as_of_block` is `97014463`, the service's current index head as reported in this saved body, not the historical snapshot's block watermark. A `coverage` of `"full"` and a non-null refresh timestamp do not prove up-to-date or complete history. A later request may return a different response.
+
+After installing the v0.1.5 archive above, keep `BLOCKVECTRA_API_KEY` in your existing environment or secret manager; it is intentionally absent below. This command runs the existing example:
+
+```bash
+BLOCKVECTRA_CHAIN=robinhood_mainnet \
+BLOCKVECTRA_TOKEN=0x0bd7d308f8e1639fab988df18a8011f41eacad73 \
+BLOCKVECTRA_QUOTE=0x5fc5360d0400a0fd4f2af552add042d716f1d168 \
+BLOCKVECTRA_FROM=2026-10-01 \
+BLOCKVECTRA_TO=2026-10-01 \
+node node_modules/@blockvectra/data-api/examples/dex-daily-prices.mjs
+```
+
+Keep decimal values such as `vwap` as strings.
+
 ### Blocks and Block Details
 
 ```ts
