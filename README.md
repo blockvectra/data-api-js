@@ -23,10 +23,10 @@ The npm package includes compiled JavaScript, TypeScript declarations and the ru
 ### Install the prebuilt package
 
 ```bash
-npm install https://github.com/blockvectra/data-api-js/releases/download/v0.1.4/blockvectra-data-api-0.1.4.tgz
+npm install https://github.com/blockvectra/data-api-js/releases/download/v0.1.5/blockvectra-data-api-0.1.5.tgz
 ```
 
-The tarball includes compiled code and TypeScript declarations, so installation does not generate the schema or compile from source. The [release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.4) also provides a `SHA256SUMS` file for verification.
+The tarball includes compiled code and TypeScript declarations, so installation does not generate the schema or compile from source. The [release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.5) also provides a `SHA256SUMS` file for verification.
 
 ### Install from GitHub
 
@@ -258,7 +258,7 @@ do {
 
 ### Checkpointed ERC-20 Transfers (one page per run)
 
-[`examples/address-transfers-page.mjs`](examples/address-transfers-page.mjs) is a Node.js 18+ repository example. It is **not** in the currently published npm `0.1.4` package; copy it beside a locally installed SDK or run it from a built checkout. It imports `@blockvectra/data-api` without changing the SDK.
+[`examples/address-transfers-page.mjs`](examples/address-transfers-page.mjs) is included in release archives from `0.1.5` and requires Node.js 18+. Install the prebuilt archive above, then run the packaged example as shown below. For an older `0.1.4` installation, upgrade using that archive or copy the example beside the installed SDK. It imports `@blockvectra/data-api` without changing the SDK.
 
 Set `BLOCKVECTRA_API_KEY` in the environment (never in the file, an argument, or output), create an existing private directory, and run once per page:
 
@@ -268,8 +268,10 @@ BLOCKVECTRA_ADDRESS=0x0000000000000000000000000000000000000000 \
 BLOCKVECTRA_FROM_BLOCK=18000000 \
 BLOCKVECTRA_TO_BLOCK=18099999 \
 BLOCKVECTRA_STATE="$PWD/.checkpoints/address-transfers.json" \
-node examples/address-transfers-page.mjs
+node node_modules/@blockvectra/data-api/examples/address-transfers-page.mjs
 ```
+
+From a built repository checkout, use `node examples/address-transfers-page.mjs` with the same environment variables.
 
 The chain must be a lowercase slug, the address a `0x`-prefixed 20-byte value, and the block bounds non-negative decimal strings with `to >= from` and a window of at most 100,000 blocks. The example fixes `standard=erc20`, `direction=any`, `limit=100`, and sends no clamp or base-URL override.
 
@@ -341,14 +343,14 @@ type Block = components["schemas"]["Block"];
 Maintainers can run the post-publication acceptance check after a normal, approved npm release (Node.js 18 or newer):
 
 ```bash
-ARCHIVE=/path/to/blockvectra-data-api-0.1.4.tgz
+ARCHIVE=/path/to/blockvectra-data-api-0.1.5.tgz
 SHA256=REPLACE_WITH_THE_ARCHIVE_SHA256
 SOURCE=REPLACE_WITH_THE_RELEASE_COMMIT
 TREE=REPLACE_WITH_THE_RELEASE_TREE
 
 npm run verify:publication -- \
   --package @blockvectra/data-api \
-  --version 0.1.4 \
+  --version 0.1.5 \
   --archive "$ARCHIVE" \
   --sha256 "$SHA256" \
   --source "$SOURCE" \
