@@ -307,6 +307,30 @@ import type { components, DataClient, DataApiError } from "@blockvectra/data-api
 type Block = components["schemas"]["Block"];
 ```
 
+## Verifying a published release
+
+Maintainers can run the post-publication acceptance check after a normal, approved npm release (Node.js 18 or newer):
+
+```bash
+ARCHIVE=/path/to/blockvectra-data-api-0.1.4.tgz
+SHA256=REPLACE_WITH_THE_ARCHIVE_SHA256
+SOURCE=REPLACE_WITH_THE_RELEASE_COMMIT
+TREE=REPLACE_WITH_THE_RELEASE_TREE
+
+npm run verify:publication -- \
+  --package @blockvectra/data-api \
+  --version 0.1.4 \
+  --archive "$ARCHIVE" \
+  --sha256 "$SHA256" \
+  --source "$SOURCE" \
+  --tree "$TREE" \
+  --out .evidence/receipt.json
+```
+
+While npm returns a 404 or does not list the target version yet, the check stays in `PROCESSING_PENDING` and polls public npm metadata every 30 seconds for up to 10 minutes. If the version never appears, it writes a `PROCESSING_PENDING` receipt and exits non-zero. Once the version is visible, it verifies the public metadata and tarball against the frozen archive, then performs one ordinary public `npm install` in a temporary consumer under `.tmp` to verify the installed files and ESM exports. It never publishes, never changes the version, and never calls the Data API.
+
+Add `--expect-latest` when the release should carry npm's `latest` tag. In that mode the check verifies `dist-tags.latest` and installs the bare `@blockvectra/data-api` name, matching the normal user path; without the flag it installs the exact `@blockvectra/data-api@<version>`.
+
 ## Development
 
 ```bash
