@@ -101,6 +101,44 @@ Provide the key through your environment or a secret manager (`BLOCKVECTRA_API_K
 
 Any non-2xx response, or a `200` without data, makes the script exit with an error. For a `401`, check the key and the chain. For `429` and `503`, see [Error Handling](#error-handling) and retry on your own schedule; the example does not retry.
 
+### Deno quick start
+
+Install the [prebuilt package](#install-the-prebuilt-package) into your project, then save this as `quickstart-deno.ts` (Deno 2):
+
+```ts
+import { createDataClient, isDataApiError } from "@blockvectra/data-api";
+
+const chain = Deno.env.get("BLOCKVECTRA_CHAIN") || "robinhood_mainnet";
+const client = createDataClient({
+  apiKey: Deno.env.get("BLOCKVECTRA_API_KEY") ?? "",
+});
+const { data, error, response } = await client.GET("/{chain}/status/freshness", {
+  params: { path: { chain } },
+  signal: AbortSignal.timeout(15_000),
+});
+if (!response.ok || !data) {
+  const code = isDataApiError(error) && /^[a-z0-9_]{1,64}$/.test(error.error.code)
+    ? ` ${error.error.code}` : "";
+  throw new Error(`Data API request failed: HTTP ${response.status}${code}`);
+}
+console.log(JSON.stringify({
+  chain,
+  as_of_block: data.meta.as_of_block,
+  finalized_block: data.meta.finalized_block,
+  datasets: data.data.length,
+}));
+```
+
+Provide the key through your environment or secret manager, then run:
+
+```bash
+deno run --node-modules-dir=manual --no-prompt \
+  --allow-env=BLOCKVECTRA_API_KEY,BLOCKVECTRA_CHAIN \
+  --allow-net=api.blockvectra.com quickstart-deno.ts
+```
+
+Deno reads the installed package from `node_modules`. The command grants access to only those two environment variables and the API host; it does not grant general filesystem or subprocess access. A blank key fails before a request; otherwise the example makes one request with a 15-second timeout and no retries. Inspect the returned dataset watermarks before relying on freshness. These instructions target the Deno CLI, not a hosted Edge Function deployment.
+
 ## Create a Client
 
 Get an API key from [https://blockvectra.com/en/get-api-key/](https://blockvectra.com/en/get-api-key/?ref=gh-data-api-js) (or the console at [https://console.blockvectra.com/keys/](https://console.blockvectra.com/keys/?ref=gh-data-api-js)).
