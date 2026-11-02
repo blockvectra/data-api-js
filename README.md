@@ -14,11 +14,7 @@ One client works for every supported chain via the `{chain}` path parameter, giv
 
 ## Installation
 
-```bash
-npm install @blockvectra/data-api
-```
-
-The npm package includes compiled JavaScript, TypeScript declarations and the runnable daily-price example. You can also use a prebuilt GitHub package or install from source.
+Use the prebuilt v0.1.5 package below for the examples in this README, including checkpointed ERC-20 transfers. Installation uses compiled JavaScript and TypeScript declarations without generating a schema or building from source.
 
 ### Install the prebuilt package
 
@@ -27,6 +23,16 @@ npm install https://github.com/blockvectra/data-api-js/releases/download/v0.1.5/
 ```
 
 The tarball includes compiled code and TypeScript declarations, so installation does not generate the schema or compile from source. The [release](https://github.com/blockvectra/data-api-js/releases/tag/v0.1.5) also provides a `SHA256SUMS` file for verification.
+
+### Install from npm
+
+Version 0.1.4 is also available from npm:
+
+```bash
+npm install @blockvectra/data-api@0.1.4
+```
+
+It includes the compiled client, TypeScript declarations and the daily-price example. It does not include `examples/address-transfers-page.mjs`; use the prebuilt v0.1.5 package above for that checkpointed transfer example.
 
 ### Install from GitHub
 
